@@ -262,7 +262,7 @@ class StripGUI:
 
                 Number_of_primary_turns = round(Number_of_primary_turns)
 
-                Turns_per_layer_primary = math.floor(spt.turns_per_layer_strip(winding_lenghth, width_primary))
+                Turns_per_layer_primary = math.floor(spt.turns_per_layer_strip(winding_lenghth, width_primary, bobbin_thickness))
 
                 Number_of_layers_primary = math.ceil(spt.number_of_layers(Number_of_primary_turns, Turns_per_layer_primary))
 
@@ -283,7 +283,7 @@ class StripGUI:
 
                 Number_of_secondary_turns = round(Number_of_secondary_turns)
 
-                Turns_per_layer_secondary = math.floor(spt.turns_per_layer_strip(winding_lenghth, width_secondary))
+                Turns_per_layer_secondary = math.floor(spt.turns_per_layer_strip(winding_lenghth, width_secondary, bobbin_thickness))
 
                 Number_of_layers_secondary = math.ceil(spt.number_of_layers(Number_of_secondary_turns, Turns_per_layer_secondary))
 
@@ -499,6 +499,7 @@ class StripGUI:
         k_f = spt.k_f
         k_u = spt.k_u
         lamination_data = spt.lamination_data
+        stack_data = pd.read_csv('https://raw.githubusercontent.com/emagdevices/AutoTransformer/master/DATA/standard_stack.csv')
         # swg_data = pd.read_csv('https://raw.githubusercontent.com/emagdevices/auto-transformer/main/DATA/Wires_data.csv')
 
         apparent_power = spt.apparent_power(output_power, efficiency)
@@ -530,169 +531,391 @@ class StripGUI:
         #                     Secondary Wire
         ##############################################################
 
-        stack_data = []
-
+        data = []
+  
         for lamination in lamination_data['Type']:
-
             selected_lamination = lamination_data[lamination_data['Type'] == lamination]
+            tongue = selected_lamination['Tongue'].max()  # mm
+            wl = selected_lamination['Winding-length'].max() # mm
+            ww = selected_lamination['Winding-width'].max() # mm 
+            
+            if selected_lamination['Type'].min() in stack_data['Lamination'].unique():
+                # print(stack_data['Lamination'
+                for s in stack_data[stack_data['Lamination'] == selected_lamination['Type'].min()]['stack']:
+                    stack = s 
+                    AP = stack * tongue * wl * ww
 
-            for x in range(60, 141, 5):
+                    if AP > 0.5 * 10000 * area_product and AP < 2 * 10000 * area_product:
+                        print(AP, round(area_product*10000, 2))
 
-                tongue = selected_lamination['Tongue'].max()  # mm
+                        if stack < 2 * tongue and stack >= tongue * 0.5:
+                        # stack = spt.rounding_stack_as_multiple_of_five(stack)  # mm 
+                        
+                            A_c = spt.core_area(stack, tongue)  # cm2
 
-                wl = selected_lamination['Winding-length'].max() # mm
+                            # ************************ Primary Wire ******************************** 
+
+                            Number_of_primary_turns = spt.primary_turns(input_voltage, b_ac, frequency, A_c)
+                            Number_of_primary_turns = round(Number_of_primary_turns)
+                            Turns_per_layer_primary = math.floor(spt.turns_per_layer(wl, width_primary, bobbin_thickness))
+                            Number_of_layers_primary = math.ceil(spt.number_of_layers(Number_of_primary_turns, Turns_per_layer_primary))
+                            Built_primary = spt.built_primary_strip(Number_of_layers_primary, height_priamry, bobbin_thickness)
+                            MTL_primary = spt.mtl_primary(tongue, stack, bobbin_thickness, Built_primary)
+                            Length_primary = spt.length(MTL_primary, Number_of_primary_turns)
+                            Primary_resistance = spt.resistance(Resistivity_conductor, Length_primary, actual_a_wp)
+                            Primary_copper_loss = spt.conductor_loss(input_current, Primary_resistance)
+                            # ************************ Primary Wire ******************************** 
+
+                            # ************************ Secondary Wire ******************************
+                            Number_of_secondary_turns = spt.secondary_turns(Number_of_primary_turns, output_voltage, regulation, input_voltage)
+                            Number_of_secondary_turns = round(Number_of_secondary_turns)
+                            Turns_per_layer_secondary = math.floor(spt.turns_per_layer(wl, width_secondary, bobbin_thickness))
+                            Number_of_layers_secondary = math.ceil(spt.number_of_layers(Number_of_secondary_turns, Turns_per_layer_secondary))
+                            Built_secondary = spt.built_secondary_strip(Number_of_layers_secondary, height_secondary, insulation_thickness)
+                            MTL_secondary = spt.mtl_secondary(tongue, stack, Built_primary, Built_secondary, bobbin_thickness)
+                            Length_secondary = spt.length(MTL_secondary, Number_of_secondary_turns)
+                            Secondary_resistance = spt.resistance(Resistivity_conductor, Length_secondary, actual_a_ws)
+                            Secondary_copper_loss = spt.conductor_loss(secondary_current, Secondary_resistance)
+                            # ************************ Secondary Wire ******************************
+                            Weight_of_copper_kg = (Length_primary * required_strip_primary['Conductor Weight for 1000m/Kg'].max() + Length_secondary * required_strip_secondary['Conductor Weight for 1000m/Kg'].max() ) / 10**5  #kg
+                            if output_power > 1000:
+                                Total_Built = spt.total_built(Built_primary, Built_secondary, bobbin_thickness)
+                            else:
+                                Total_Built = Built_primary + Built_secondary
+                            
+                            if (ww * 0.9 > Total_Built):
+                                Total_Cu_loss = spt.total_copper_loss(Primary_copper_loss, Secondary_copper_loss)
+                                Core_loss_factor = spt.core_loss_factor(frequency, b_ac) 
+                                Core_loss_factor = Core_Loss_Factor
+                                volume_of_core = spt.volume_of_core(stack, tongue, ww, wl)
+                                Density_of_core = 7.8 # g/cm^3
+                                weight_of_core = spt.weight_of_core(Density_of_core, volume_of_core)
+                                weight_of_core_kg = weight_of_core / 1000  # kg
+                                core_loss = spt.core_loss(Core_loss_factor, weight_of_core_kg) 
+                                total_loss = spt.total_loss(Total_Cu_loss, core_loss)
+                                conductor_surface_area = spt.conductor_surface_area(stack, Total_Built, tongue, wl)  # cm2
+                                core_surface_area = spt.core_surface_area(stack, tongue, wl, ww)  # cm2
+                                total_surface_area = spt.total_surface_area(stack, tongue, wl, ww, Total_Built)  # cm2
+                                psi_copper = spt.psi(Total_Cu_loss, conductor_surface_area)
+                                temperature_rise_copper = spt.temperature_rise(psi_copper)
+                                psi_core = spt.psi(core_loss, core_surface_area)
+                                temperature_rise_core = spt.temperature_rise(psi_core)
+                                cost = spt.cost(weight_of_core_kg, Weight_of_copper_kg, rate_copper=Rate_of_Cu, rate_fe=Rate_of_Fe)
+                                if (temperature_rise_copper < temperature_rise_goal) and (temperature_rise_core < temperature_rise_goal):
+                                    lamination = selected_lamination['Type'].max()
+                                    results_data = {
+                                        # 'x %': x,
+                                        'Lamination': selected_lamination['Type'].max(),
+                                        # 'Area product': present_area_product,
+                                        'Type': f'Lamination {lamination}',
+                                        'Primary wire': required_strip_primary['combination'].min(),
+                                        'width primary': width_primary,
+                                        'height primary': height_priamry,
+                                        'Secondary wire': required_strip_secondary['combination'].min(),
+                                        'width secondary': width_secondary,
+                                        'height secondary': height_secondary,
+                                        'Stack mm': stack,
+                                        'Tongue mm': tongue,
+                                        'wl mm': wl,
+                                        'ww mm': ww,
+                                        'Total Built': Total_Built,
+                                        'Core Loss': core_loss,
+                                        'Copper Loss': Total_Cu_loss,
+                                        # 'Total Cu Cost': Weight_of_copper_kg * Rate_of_Cu,
+                                        # 'Total Fe Cost': weight_of_core_kg * Rate_of_Fe,
+                                        'Temperature rise Cu': temperature_rise_copper,
+                                        'Temperature rise Fe': temperature_rise_core,
+                                        'Core weight': weight_of_core_kg,
+                                        'Conductor weight': Weight_of_copper_kg,
+                                        'Cost': cost,
+                                        'Primary turns': Number_of_primary_turns,
+                                        'Secondary turns': Number_of_secondary_turns,
+                                        'MTL Primary': MTL_primary,
+                                        'MTL Secondary': MTL_secondary,
+                                        'TPL Primary': Turns_per_layer_primary,
+                                        'TPL Secondary': Turns_per_layer_secondary,
+                                        'Length primary': Length_primary,
+                                        'Length secondary': Length_secondary,
+                                        'Resistance primary': Primary_resistance,
+                                        'Resistance secondary': Secondary_resistance,
+                                        'Cu surface area': conductor_surface_area,
+                                        'Core surface area': core_surface_area,
+                                        'Weight of Cu kg': Weight_of_copper_kg,
+                                        'Weight of Fe': weight_of_core_kg,
+                                        'Primary current': input_current,
+                                        'Primary voltage': input_voltage,
+                                        'Primary power': input_current * input_voltage,
+                                        'Secondary current': secondary_current,
+                                        'Secondary voltage': output_voltage,
+                                        'Secondary power': output_power
+                                    }
+                                    data.append(results_data)
+            else:
+                for x in range(60, 141, 5):
+                    present_area_product = x * 0.01 * area_product
+                    stack = spt.calculate_stack(present_area_product, selected_lamination['K-ratio'].max())
+                    if stack < 2 * tongue and stack >= tongue * 0.5:
+                        stack = spt.rounding_stack_as_multiple_of_five(stack)  # mm 
+                        A_c = spt.core_area(stack, tongue)  # cm2
+
+                        # ************************ Primary Wire ******************************** 
+
+                        Number_of_primary_turns = spt.primary_turns(input_voltage, b_ac, frequency, A_c)
+                        Number_of_primary_turns = round(Number_of_primary_turns)
+                        Turns_per_layer_primary = math.floor(spt.turns_per_layer(wl, width_primary, bobbin_thickness))
+                        Number_of_layers_primary = math.ceil(spt.number_of_layers(Number_of_primary_turns, Turns_per_layer_primary))
+                        Built_primary = spt.built_primary(Number_of_layers_primary, height_priamry, bobbin_thickness)
+                        MTL_primary = spt.mtl_primary(tongue, stack, bobbin_thickness, Built_primary)
+                        Length_primary = spt.length(MTL_primary, Number_of_primary_turns)
+                        Primary_resistance = spt.resistance(Resistivity_conductor, Length_primary, actual_a_wp)
+                        Primary_copper_loss = spt.conductor_loss(input_current, Primary_resistance)
+                        # ************************ Primary Wire ******************************** 
+
+                        # ************************ Secondary Wire ******************************
+                        Number_of_secondary_turns = spt.secondary_turns(Number_of_primary_turns, output_voltage, regulation, input_voltage)
+                        Number_of_secondary_turns = round(Number_of_secondary_turns)
+                        Turns_per_layer_secondary = math.floor(spt.turns_per_layer(wl, width_secondary, bobbin_thickness))
+                        Number_of_layers_secondary = math.ceil(spt.number_of_layers(Number_of_secondary_turns, Turns_per_layer_secondary))
+                        Built_secondary = spt.built_secondary(Number_of_layers_secondary, height_secondary, insulation_thickness)
+                        MTL_secondary = spt.mtl_secondary(tongue, stack, Built_primary, Built_secondary, bobbin_thickness)
+                        Length_secondary = spt.length(MTL_secondary, Number_of_secondary_turns)
+                        Secondary_resistance = spt.resistance(Resistivity_conductor, Length_secondary, actual_a_ws)
+                        Secondary_copper_loss = spt.conductor_loss(secondary_current, Secondary_resistance)
+                        # ************************ Secondary Wire ******************************
+                        Weight_of_copper_kg = (Length_primary * required_strip_primary['Conductor Weight for 1000m/Kg'].max() + Length_secondary * required_strip_secondary['Conductor Weight for 1000m/Kg'].max() ) / 10**5  #kg
+                        if output_power > 1000:
+                            Total_Built = spt.total_built(Built_primary, Built_secondary, bobbin_thickness)
+                        else:
+                            Total_Built = Built_primary + Built_secondary        
+                        if (ww * 0.9 > Total_Built):
+                            Total_Cu_loss = spt.total_copper_loss(Primary_copper_loss, Secondary_copper_loss)
+                            Core_loss_factor = spt.core_loss_factor(frequency, b_ac) 
+                            Core_loss_factor = Core_Loss_Factor
+                            volume_of_core = spt.volume_of_core(stack, tongue, ww, wl)
+                            Density_of_core = 7.8 # g/cm^3
+                            weight_of_core = spt.weight_of_core(Density_of_core, volume_of_core)
+                            weight_of_core_kg = weight_of_core / 1000  # kg
+                            core_loss = spt.core_loss(Core_loss_factor, weight_of_core_kg) 
+                            total_loss = spt.total_loss(Total_Cu_loss, core_loss)
+                            conductor_surface_area = spt.conductor_surface_area(stack, Total_Built, tongue, wl)  # cm2
+                            core_surface_area = spt.core_surface_area(stack, tongue, wl, ww)  # cm2
+                            total_surface_area = spt.total_surface_area(stack, tongue, wl, ww, Total_Built)  # cm2
+                            psi_copper = spt.psi(Total_Cu_loss, conductor_surface_area)
+                            temperature_rise_copper = spt.temperature_rise(psi_copper)
+                            psi_core = spt.psi(core_loss, core_surface_area)
+                            temperature_rise_core = spt.temperature_rise(psi_core)
+                            cost = spt.cost(weight_of_core_kg, Weight_of_copper_kg, rate_copper=Rate_of_Cu, rate_fe=Rate_of_Fe)
+                            if (temperature_rise_copper < temperature_rise_goal) and (temperature_rise_core < temperature_rise_goal):
+                                lamination = selected_lamination['Type'].max()
+                                results_data = {
+                                    # 'x %': x,
+                                    'Lamination': selected_lamination['Type'].max(),
+                                    # 'Area product': present_area_product,
+                                    'Type': f'Lamination {lamination}',
+                                    'Primary wire': required_strip_primary['combination'].min(),
+                                    'width primary': width_primary,
+                                    'height primary': height_priamry,
+                                    'Secondary wire': required_strip_secondary['combination'].min(),
+                                    'width secondary': width_secondary,
+                                    'height secondary': height_secondary,
+                                    'Stack mm': stack,
+                                    'Tongue mm': tongue,
+                                    'wl mm': wl,
+                                    'ww mm': ww,
+                                    'Total Built': Total_Built,
+                                    'Core Loss': core_loss,
+                                    'Copper Loss': Total_Cu_loss,
+                                    # 'Total Cu Cost': Weight_of_copper_kg * Rate_of_Cu,
+                                    # 'Total Fe Cost': weight_of_core_kg * Rate_of_Fe,
+                                    'Temperature rise Cu': temperature_rise_copper,
+                                    'Temperature rise Fe': temperature_rise_core,
+                                    'Core weight': weight_of_core_kg,
+                                    'Conductor weight': Weight_of_copper_kg,
+                                    'Cost': cost,
+                                    'Primary turns': Number_of_primary_turns,
+                                    'Secondary turns': Number_of_secondary_turns,
+                                    'MTL Primary': MTL_primary,
+                                    'MTL Secondary': MTL_secondary,
+                                    'TPL Primary': Turns_per_layer_primary,
+                                    'TPL Secondary': Turns_per_layer_secondary,
+                                    'Length primary': Length_primary,
+                                    'Length secondary': Length_secondary,
+                                    'Resistance primary': Primary_resistance,
+                                    'Resistance secondary': Secondary_resistance,
+                                    'Cu surface area': conductor_surface_area,
+                                    'Core surface area': core_surface_area,
+                                    'Weight of Cu kg': Weight_of_copper_kg,
+                                    'Weight of Fe': weight_of_core_kg,
+                                    'Primary current': input_current,
+                                    'Primary voltage': input_voltage,
+                                    'Primary power': input_current * input_voltage,
+                                    'Secondary current': secondary_current,
+                                    'Secondary voltage': output_voltage,
+                                    'Secondary power': output_power
+                                }
+                                data.append(results_data)
+
+        # for lamination in lamination_data['Type']:
+
+        #     selected_lamination = lamination_data[lamination_data['Type'] == lamination]
+
+        #     for x in range(60, 141, 5):
+
+        #         tongue = selected_lamination['Tongue'].max()  # mm
+
+        #         wl = selected_lamination['Winding-length'].max() # mm
                 
-                ww = selected_lamination['Winding-width'].max() # mm 
+        #         ww = selected_lamination['Winding-width'].max() # mm 
 
-                present_area_product = x * 0.01 * area_product
+        #         present_area_product = x * 0.01 * area_product
 
-                stack = spt.calculate_stack(present_area_product, selected_lamination['K-ratio'].max())
+        #         stack = spt.calculate_stack(present_area_product, selected_lamination['K-ratio'].max())
 
-                # print(f'lamination: {lamination} >> area product: {present_area_product} >> stack: {stack} >> tongue: {tongue}')
+        #         # print(f'lamination: {lamination} >> area product: {present_area_product} >> stack: {stack} >> tongue: {tongue}')
 
-                if stack < 2 * tongue and stack > tongue * 0.5:
+        #         if stack < 2 * tongue and stack > tongue * 0.5:
 
-                    stack = spt.rounding_stack_as_multiple_of_five(stack)  # mm 
+        #             stack = spt.rounding_stack_as_multiple_of_five(stack)  # mm 
 
-                    A_c = spt.core_area(stack, tongue)  # cm2
+        #             A_c = spt.core_area(stack, tongue)  # cm2
 
-                    # ************************ Primary Wire ******************************** 
+        #             # ************************ Primary Wire ******************************** 
 
-                    Number_of_primary_turns = spt.primary_turns(input_voltage, b_ac, frequency, A_c)
+        #             Number_of_primary_turns = spt.primary_turns(input_voltage, b_ac, frequency, A_c)
 
-                    Number_of_primary_turns = round(Number_of_primary_turns)
+        #             Number_of_primary_turns = round(Number_of_primary_turns)
 
-                    Turns_per_layer_primary = math.floor(spt.turns_per_layer(wl, width_primary))
+        #             Turns_per_layer_primary = math.floor(spt.turns_per_layer(wl, width_primary))
 
-                    Number_of_layers_primary = math.ceil(spt.number_of_layers(Number_of_primary_turns, Turns_per_layer_primary))
+        #             Number_of_layers_primary = math.ceil(spt.number_of_layers(Number_of_primary_turns, Turns_per_layer_primary))
 
-                    Built_primary = spt.built_primary(Number_of_layers_primary, height_priamry, bobbin_thickness)
+        #             Built_primary = spt.built_primary(Number_of_layers_primary, height_priamry, bobbin_thickness)
 
-                    MTL_primary = spt.mtl_primary(tongue, stack, bobbin_thickness, Built_primary)
+        #             MTL_primary = spt.mtl_primary(tongue, stack, bobbin_thickness, Built_primary)
 
-                    Length_primary = spt.length(MTL_primary, Number_of_primary_turns)
+        #             Length_primary = spt.length(MTL_primary, Number_of_primary_turns)
 
-                    Primary_resistance = spt.resistance(Resistivity_conductor, Length_primary, actual_a_wp)
+        #             Primary_resistance = spt.resistance(Resistivity_conductor, Length_primary, actual_a_wp)
 
-                    Primary_copper_loss = spt.conductor_loss(input_current, Primary_resistance)
+        #             Primary_copper_loss = spt.conductor_loss(input_current, Primary_resistance)
 
-                    # ************************ Primary Wire ******************************** 
+        #             # ************************ Primary Wire ******************************** 
 
-                    # ************************ Secondary Wire ******************************
+        #             # ************************ Secondary Wire ******************************
 
-                    Number_of_secondary_turns = spt.secondary_turns(Number_of_primary_turns, output_voltage, regulation, input_voltage)
+        #             Number_of_secondary_turns = spt.secondary_turns(Number_of_primary_turns, output_voltage, regulation, input_voltage)
 
-                    Number_of_secondary_turns = round(Number_of_secondary_turns)
+        #             Number_of_secondary_turns = round(Number_of_secondary_turns)
 
-                    Turns_per_layer_secondary = math.floor(spt.turns_per_layer(wl, width_secondary))
+        #             Turns_per_layer_secondary = math.floor(spt.turns_per_layer(wl, width_secondary))
 
-                    Number_of_layers_secondary = math.ceil(spt.number_of_layers(Number_of_secondary_turns, Turns_per_layer_secondary))
+        #             Number_of_layers_secondary = math.ceil(spt.number_of_layers(Number_of_secondary_turns, Turns_per_layer_secondary))
 
-                    Built_secondary = spt.built_secondary(Number_of_layers_secondary, height_secondary, insulation_thickness)
+        #             Built_secondary = spt.built_secondary(Number_of_layers_secondary, height_secondary, insulation_thickness)
 
-                    MTL_secondary = spt.mtl_secondary(tongue, stack, Built_primary, Built_secondary, bobbin_thickness)
+        #             MTL_secondary = spt.mtl_secondary(tongue, stack, Built_primary, Built_secondary, bobbin_thickness)
 
-                    Length_secondary = spt.length(MTL_secondary, Number_of_secondary_turns)
+        #             Length_secondary = spt.length(MTL_secondary, Number_of_secondary_turns)
 
-                    Secondary_resistance = spt.resistance(Resistivity_conductor, Length_secondary, actual_a_ws)
+        #             Secondary_resistance = spt.resistance(Resistivity_conductor, Length_secondary, actual_a_ws)
 
-                    Secondary_copper_loss = spt.conductor_loss(secondary_current, Secondary_resistance)
+        #             Secondary_copper_loss = spt.conductor_loss(secondary_current, Secondary_resistance)
 
-                    # ************************ Secondary Wire ******************************
+        #             # ************************ Secondary Wire ******************************
 
-                    Weight_of_copper_kg = (Length_primary * required_strip_primary['Conductor Weight for 1000m/Kg'].max() + Length_secondary * required_strip_secondary['Conductor Weight for 1000m/Kg'].max() ) / 10**5  #kg
+        #             Weight_of_copper_kg = (Length_primary * required_strip_primary['Conductor Weight for 1000m/Kg'].max() + Length_secondary * required_strip_secondary['Conductor Weight for 1000m/Kg'].max() ) / 10**5  #kg
                     
-                    if output_power > 1000:
-                        Total_Built = spt.total_built(Built_primary, Built_secondary, bobbin_thickness)
-                    else:
-                        Total_Built = Built_primary + Built_secondary
+        #             if output_power > 1000:
+        #                 Total_Built = spt.total_built(Built_primary, Built_secondary, bobbin_thickness)
+        #             else:
+        #                 Total_Built = Built_primary + Built_secondary
                     
-                    if (ww * 0.9 > Total_Built):
+        #             if (ww * 0.9 > Total_Built):
 
-                        Total_Cu_loss = spt.total_copper_loss(Primary_copper_loss, Secondary_copper_loss)
+        #                 Total_Cu_loss = spt.total_copper_loss(Primary_copper_loss, Secondary_copper_loss)
 
-                        Core_loss_factor = spt.core_loss_factor(frequency, b_ac) 
+        #                 Core_loss_factor = spt.core_loss_factor(frequency, b_ac) 
 
-                        Core_loss_factor = Core_Loss_Factor
+        #                 Core_loss_factor = Core_Loss_Factor
 
-                        volume_of_core = spt.volume_of_core(stack, tongue, ww, wl)
+        #                 volume_of_core = spt.volume_of_core(stack, tongue, ww, wl)
 
-                        Density_of_core = 7.8 # g/cm^3
+        #                 Density_of_core = 7.8 # g/cm^3
 
-                        weight_of_core = spt.weight_of_core(Density_of_core, volume_of_core)
+        #                 weight_of_core = spt.weight_of_core(Density_of_core, volume_of_core)
 
-                        weight_of_core_kg = weight_of_core / 1000  # kg
+        #                 weight_of_core_kg = weight_of_core / 1000  # kg
 
-                        core_loss = spt.core_loss(Core_loss_factor, weight_of_core_kg) 
+        #                 core_loss = spt.core_loss(Core_loss_factor, weight_of_core_kg) 
 
-                        total_loss = spt.total_loss(Total_Cu_loss, core_loss)
+        #                 total_loss = spt.total_loss(Total_Cu_loss, core_loss)
 
-                        conductor_surface_area = spt.conductor_surface_area(stack, Total_Built, tongue, wl)  # cm2
+        #                 conductor_surface_area = spt.conductor_surface_area(stack, Total_Built, tongue, wl)  # cm2
 
-                        core_surface_area = spt.core_surface_area(stack, tongue, wl, ww)  # cm2
+        #                 core_surface_area = spt.core_surface_area(stack, tongue, wl, ww)  # cm2
 
-                        total_surface_area = spt.total_surface_area(stack, tongue, wl, ww, Total_Built)  # cm2
+        #                 total_surface_area = spt.total_surface_area(stack, tongue, wl, ww, Total_Built)  # cm2
 
-                        psi_copper = spt.psi(Total_Cu_loss, conductor_surface_area)
+        #                 psi_copper = spt.psi(Total_Cu_loss, conductor_surface_area)
 
-                        temperature_rise_copper = spt.temperature_rise(psi_copper)
+        #                 temperature_rise_copper = spt.temperature_rise(psi_copper)
 
-                        psi_core = spt.psi(core_loss, core_surface_area)
+        #                 psi_core = spt.psi(core_loss, core_surface_area)
 
-                        temperature_rise_core = spt.temperature_rise(psi_core)
+        #                 temperature_rise_core = spt.temperature_rise(psi_core)
 
-                        cost = spt.cost(weight_of_core_kg, Weight_of_copper_kg, rate_copper=Rate_of_Cu, rate_fe=Rate_of_Fe)
+        #                 cost = spt.cost(weight_of_core_kg, Weight_of_copper_kg, rate_copper=Rate_of_Cu, rate_fe=Rate_of_Fe)
 
-                        if (temperature_rise_copper < temperature_rise_goal) and (temperature_rise_core < temperature_rise_goal):
-                            results_data = {
-                                # 'x %': x,
-                                'Lamination': selected_lamination['Type'].max(),
-                                # 'Area product': present_area_product,
-                                'Type': 'Lamination',
-                                'Primary wire': required_strip_primary['combination'].min(),
-                                'width primary': width_primary,
-                                'height primary': height_priamry,
-                                'Secondary wire': required_strip_secondary['combination'].min(),
-                                'width secondary': width_secondary,
-                                'height secondary': height_secondary,
-                                'Stack mm': stack,
-                                'Tongue mm': tongue,
-                                'wl mm': wl,
-                                'ww mm': ww,
-                                'Total Built': Total_Built,
-                                'Core Loss': core_loss,
-                                'Copper Loss': Total_Cu_loss,
-                                # 'Total Cu Cost': Weight_of_copper_kg * Rate_of_Cu,
-                                # 'Total Fe Cost': weight_of_core_kg * Rate_of_Fe,
-                                'Temperature rise Cu': temperature_rise_copper,
-                                'Temperature rise Fe': temperature_rise_core,
-                                'Core weight': weight_of_core_kg,
-                                'Conductor weight': Weight_of_copper_kg,
-                                'Cost': cost,
-                                'Primary turns': Number_of_primary_turns,
-                                'Secondary turns': Number_of_secondary_turns,
-                                'MTL Primary': MTL_primary,
-                                'MTL Secondary': MTL_secondary,
-                                'TPL Primary': Turns_per_layer_primary,
-                                'TPL Secondary': Turns_per_layer_secondary,
-                                'Length primary': Length_primary,
-                                'Length secondary': Length_secondary,
-                                'Resistance primary': Primary_resistance,
-                                'Resistance secondary': Secondary_resistance,
-                                'Cu surface area': conductor_surface_area,
-                                'Core surface area': core_surface_area,
-                                'Weight of Cu kg': Weight_of_copper_kg,
-                                'Weight of Fe': weight_of_core_kg,
-                                'Primary current': input_current,
-                                'Primary voltage': input_voltage,
-                                'Primary power': input_current * input_voltage,
-                                'Secondary current': secondary_current,
-                                'Secondary voltage': output_voltage,
-                                'Secondary power': output_power
-                            }
-                            stack_data.append(results_data)
+        #                 if (temperature_rise_copper < temperature_rise_goal) and (temperature_rise_core < temperature_rise_goal):
+        #                     results_data = {
+        #                         # 'x %': x,
+        #                         'Lamination': selected_lamination['Type'].max(),
+        #                         # 'Area product': present_area_product,
+        #                         'Type': 'Lamination',
+        #                         'Primary wire': required_strip_primary['combination'].min(),
+        #                         'width primary': width_primary,
+        #                         'height primary': height_priamry,
+        #                         'Secondary wire': required_strip_secondary['combination'].min(),
+        #                         'width secondary': width_secondary,
+        #                         'height secondary': height_secondary,
+        #                         'Stack mm': stack,
+        #                         'Tongue mm': tongue,
+        #                         'wl mm': wl,
+        #                         'ww mm': ww,
+        #                         'Total Built': Total_Built,
+        #                         'Core Loss': core_loss,
+        #                         'Copper Loss': Total_Cu_loss,
+        #                         # 'Total Cu Cost': Weight_of_copper_kg * Rate_of_Cu,
+        #                         # 'Total Fe Cost': weight_of_core_kg * Rate_of_Fe,
+        #                         'Temperature rise Cu': temperature_rise_copper,
+        #                         'Temperature rise Fe': temperature_rise_core,
+        #                         'Core weight': weight_of_core_kg,
+        #                         'Conductor weight': Weight_of_copper_kg,
+        #                         'Cost': cost,
+        #                         'Primary turns': Number_of_primary_turns,
+        #                         'Secondary turns': Number_of_secondary_turns,
+        #                         'MTL Primary': MTL_primary,
+        #                         'MTL Secondary': MTL_secondary,
+        #                         'TPL Primary': Turns_per_layer_primary,
+        #                         'TPL Secondary': Turns_per_layer_secondary,
+        #                         'Length primary': Length_primary,
+        #                         'Length secondary': Length_secondary,
+        #                         'Resistance primary': Primary_resistance,
+        #                         'Resistance secondary': Secondary_resistance,
+        #                         'Cu surface area': conductor_surface_area,
+        #                         'Core surface area': core_surface_area,
+        #                         'Weight of Cu kg': Weight_of_copper_kg,
+        #                         'Weight of Fe': weight_of_core_kg,
+        #                         'Primary current': input_current,
+        #                         'Primary voltage': input_voltage,
+        #                         'Primary power': input_current * input_voltage,
+        #                         'Secondary current': secondary_current,
+        #                         'Secondary voltage': output_voltage,
+        #                         'Secondary power': output_power
+        #                     }
+        #                     data.append(results_data)
 
-        df = pd.DataFrame(stack_data)
+        df = pd.DataFrame(data)
         if df.empty:
             df = pd.DataFrame({
                 'Lamination': [],

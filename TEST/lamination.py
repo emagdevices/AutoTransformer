@@ -2,7 +2,6 @@
 import pandas as pd
 import numpy as np
 import math
-from TEST.gui import *
 
 from autotransformer import *
 spt = AutoTransformer()
@@ -41,6 +40,7 @@ k_f = spt.k_f
 k_u = spt.k_u
 lamination_data = spt.lamination_data
 swg_data = pd.read_csv('https://raw.githubusercontent.com/emagdevices/auto-transformer/main/DATA/Wires_data.csv')
+stack_data = pd.read_csv('https://raw.githubusercontent.com/emagdevices/AutoTransformer/master/DATA/standard_stack.csv')
 
 
 """
@@ -86,13 +86,24 @@ for lamination in lamination_data['Type']:
 
     selected_lamination = lamination_data[lamination_data['Type'] == lamination]
 
+    tongue = selected_lamination['Tongue'].max()  # mm
+
+    wl = selected_lamination['Winding-length'].max() # mm
+    
+    ww = selected_lamination['Winding-width'].max() # mm 
+
+    """
+    stack from our function gives a stack s
+
+
+    then we loop  we get 
+    AP = s* t * ww * wl
+    
+    IF AP > 0.6 * area_product and AP < 1.41 * area product 
+    """
+
     for x in range(60, 141, 5):
 
-        tongue = selected_lamination['Tongue'].max()  # mm
-
-        wl = selected_lamination['Winding-length'].max() # mm
-        
-        ww = selected_lamination['Winding-width'].max() # mm 
 
         present_area_product = x * 0.01 * area_product
 
@@ -154,7 +165,12 @@ for lamination in lamination_data['Type']:
 
             Weight_of_copper_kg = (Length_primary * required_strip_primary['Conductor Weight for 1000m/Kg'].max() + Length_secondary * required_strip_secondary['Conductor Weight for 1000m/Kg'].max() ) / 10**5  #kg
 
-            Total_Built = spt.total_built(Built_primary, Built_secondary, bobbin_thickness)
+            
+
+            if output_power > 1000:
+                Total_Built = spt.total_built(Built_primary, Built_secondary, bobbin_thickness)
+            else:
+                Total_Built = Built_primary + Built_secondary
 
             if (ww * 0.9 > Total_Built):
 

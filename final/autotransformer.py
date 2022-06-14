@@ -175,16 +175,16 @@ class AutoTransformer:
         return primary_turns * output_voltage * (1 + regulation / 100) / input_voltage
 
     @staticmethod
-    def turns_per_layer(winding_length, diameter):
+    def turns_per_layer(winding_length, diameter, bobbin_thickness):
         """
           Turns_per_layer_primary = wl / dw_p
           Turns_per_layer_secondary = wl / diameter_of_wire_secondary_insulated
         """
-        return winding_length / diameter
+        return (winding_length-2*bobbin_thickness) / diameter
 
     @staticmethod
-    def turns_per_layer_strip(winding_length, width):
-        return winding_length / width
+    def turns_per_layer_strip(winding_length, width, bobbin_thickness):
+        return (winding_length- 2* bobbin_thickness) / width
 
     @staticmethod
     def number_of_layers(number_of_turns, turns_per_layer):
