@@ -1,6 +1,6 @@
 from re import M
 from tkinter import *
-from autotransformer import AutoTransformer
+from singletransformer import AutoTransformer
 import math 
 import pandas as pd 
 
@@ -352,6 +352,8 @@ class StripGUI:
                                 'Tongue mm': tongue,
                                 'wl mm': winding_lenghth,
                                 'ww mm': winding_width,
+                                'Primary Built': Built_primary,
+                                'Secondary Built': Built_secondary,
                                 'Total Built': Total_Built,
                                 'Core Loss': core_loss,
                                 'Copper Loss': Total_Cu_loss,
@@ -415,6 +417,8 @@ class StripGUI:
                 'Tongue mm': [],
                 'wl mm': [],
                 'ww mm': [],
+                'Primary Built': [],
+                'Secondary Built': [],
                 'Total Built': [],
                 'Core Loss': [],
                 'Copper Loss': [],
@@ -559,7 +563,7 @@ class StripGUI:
                             Number_of_primary_turns = round(Number_of_primary_turns)
                             Turns_per_layer_primary = math.floor(spt.turns_per_layer(wl, width_primary, bobbin_thickness))
                             Number_of_layers_primary = math.ceil(spt.number_of_layers(Number_of_primary_turns, Turns_per_layer_primary))
-                            Built_primary = spt.built_primary_strip(Number_of_layers_primary, height_priamry, bobbin_thickness)
+                            Built_primary = spt.built_primary(Number_of_layers_primary, height_priamry, bobbin_thickness)
                             MTL_primary = spt.mtl_primary(tongue, stack, bobbin_thickness, Built_primary)
                             Length_primary = spt.length(MTL_primary, Number_of_primary_turns)
                             Primary_resistance = spt.resistance(Resistivity_conductor, Length_primary, actual_a_wp)
@@ -571,7 +575,7 @@ class StripGUI:
                             Number_of_secondary_turns = round(Number_of_secondary_turns)
                             Turns_per_layer_secondary = math.floor(spt.turns_per_layer(wl, width_secondary, bobbin_thickness))
                             Number_of_layers_secondary = math.ceil(spt.number_of_layers(Number_of_secondary_turns, Turns_per_layer_secondary))
-                            Built_secondary = spt.built_secondary_strip(Number_of_layers_secondary, height_secondary, insulation_thickness)
+                            Built_secondary = spt.built_secondary(Number_of_layers_secondary, height_secondary, insulation_thickness)
                             MTL_secondary = spt.mtl_secondary(tongue, stack, Built_primary, Built_secondary, bobbin_thickness)
                             Length_secondary = spt.length(MTL_secondary, Number_of_secondary_turns)
                             Secondary_resistance = spt.resistance(Resistivity_conductor, Length_secondary, actual_a_ws)
@@ -581,7 +585,7 @@ class StripGUI:
                             if output_power > 1000:
                                 Total_Built = spt.total_built(Built_primary, Built_secondary, bobbin_thickness)
                             else:
-                                Total_Built = Built_primary + Built_secondary
+                                Total_Built = Built_primary + Built_secondary + bobbin_thickness
                             
                             if (ww * 0.9 > Total_Built):
                                 Total_Cu_loss = spt.total_copper_loss(Primary_copper_loss, Secondary_copper_loss)
@@ -618,6 +622,8 @@ class StripGUI:
                                         'Tongue mm': tongue,
                                         'wl mm': wl,
                                         'ww mm': ww,
+                                        'Primary Built': Built_primary,
+                                        'Secondary Built': Built_secondary,
                                         'Total Built': Total_Built,
                                         'Core Loss': core_loss,
                                         'Copper Loss': Total_Cu_loss,
@@ -686,7 +692,7 @@ class StripGUI:
                         if output_power > 1000:
                             Total_Built = spt.total_built(Built_primary, Built_secondary, bobbin_thickness)
                         else:
-                            Total_Built = Built_primary + Built_secondary        
+                            Total_Built = Built_primary + Built_secondary + bobbin_thickness      
                         if (ww * 0.9 > Total_Built):
                             Total_Cu_loss = spt.total_copper_loss(Primary_copper_loss, Secondary_copper_loss)
                             Core_loss_factor = spt.core_loss_factor(frequency, b_ac) 
@@ -722,6 +728,8 @@ class StripGUI:
                                     'Tongue mm': tongue,
                                     'wl mm': wl,
                                     'ww mm': ww,
+                                    'Primary Built': Built_primary,
+                                    'Secondary Built': Built_secondary,
                                     'Total Built': Total_Built,
                                     'Core Loss': core_loss,
                                     'Copper Loss': Total_Cu_loss,
@@ -930,6 +938,8 @@ class StripGUI:
                 'Tongue mm': [],
                 'wl mm': [],
                 'ww mm': [],
+                'Primary Built': [],
+                'Secondary Built': [],
                 'Total Built': [],
                 'Core Loss': [],
                 'Copper Loss': [],
@@ -982,6 +992,8 @@ class StripGUI:
                 'Tongue mm': d_min_cost['Tongue mm'].min(),
                 'wl mm': d_min_cost['wl mm'].min(),
                 'ww mm': d_min_cost['ww mm'].min(),
+                'Primary Built': d_min_cost['Primary Built'].min(),
+                'Secondary Built': d_min_cost['Secondary Built'].min(),
                 'Total Built': d_min_cost['Total Built'].min(),
                 'Core Loss': d_min_cost['Core Loss'].min(),
                 'Copper Loss': d_min_cost['Copper Loss'].min(),
@@ -1027,6 +1039,8 @@ class StripGUI:
                 'Tongue mm': [],
                 'wl mm': [],
                 'ww mm': [],
+                'Primary Built': [],
+                'Secondary Built': [],
                 'Total Built': [],
                 'Core Loss': [],
                 'Copper Loss': [],
@@ -1198,6 +1212,7 @@ class Strip_Output:
         primary_current = Input_Label(popup, 'Primary current', Row, 3)
         primary_voltage = Input_Label(popup, 'Primary voltage', Row, 5)
         primary_power = Input_Label(popup, 'Primary Power', Row, 7)
+        GetData(primary_current, data['Primary current'].min())
 
         secondary_current = Input_Label(popup, 'Secondary current', Row + 1, 3)
         secondary_voltage = Input_Label(popup, 'Secondary voltage', Row + 1, 5)
@@ -1250,11 +1265,16 @@ class Strip_Output:
         GetData(secondary_resistance, data['Resistance secondary'].min())
         """
         ============================================================
-                              Wire parameters
+                              Losses and Temperature
         ============================================================
         """
         Column = Column - 3
-        Row = Row + 3
+        Row = Row + 5
+
+        primary_built  = Output_Label(popup, 'Built Primary', Row, Column)
+        secondary_built = Output_Label(popup, 'Built Secondary', Row, Column+1)
+        total_built = Output_Label(popup, 'Total Built', Row, Column+1)
+
         
         pass 
 
