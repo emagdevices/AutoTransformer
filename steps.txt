@@ -1,0 +1,10 @@
+1. Install visula studio code
+2. Install python latest version, 
+    PYTHON 3
+3. Libraries needed : 
+    > pandas
+    > tkinter
+    > numpy 
+
+4. strip_gui.py => run this file 
+    It will open the GUI 

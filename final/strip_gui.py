@@ -1,5 +1,7 @@
 from re import M
 from tkinter import *
+
+from matplotlib.pyplot import copper
 from singletransformer import AutoTransformer
 import math 
 import pandas as pd 
@@ -299,6 +301,8 @@ class StripGUI:
 
                 # ************************ Secondary Wire ******************************
 
+                weight_primary_cu = Length_primary * required_strip_primary['Conductor Weight for 1000m/Kg'].max() / 10**5
+
                 Weight_of_copper_kg = (Length_primary * required_strip_primary['Conductor Weight for 1000m/Kg'].max() + Length_secondary * required_strip_secondary['Conductor Weight for 1000m/Kg'].max() ) / 10**5  #kg
 
                 Total_Built = spt.total_built(Built_primary, Built_secondary, bobbin_thickness)
@@ -361,6 +365,8 @@ class StripGUI:
                                 'Temperature rise Fe': temperature_rise_core,
                                 'Core weight': weight_of_core_kg,
                                 'Conductor weight': Weight_of_copper_kg,
+                                'Total Cu Cost': Weight_of_copper_kg * Rate_of_Cu,
+                                'Total Fe Cost': weight_of_core_kg * Rate_of_Fe,
                                 'Cost': cost,
                                 'Primary turns': Number_of_primary_turns,
                                 'Secondary turns': Number_of_secondary_turns,
@@ -381,7 +387,15 @@ class StripGUI:
                                 'Primary power': input_voltage* input_current,
                                 'Secondary current': secondary_current,
                                 'Secondary voltage': output_voltage,
-                                'Secondary power': output_power
+                                'Secondary power': output_power,
+                                'Frequency': frequency,
+                                'B max': b_ac,
+                                'bobbin': bobbin_thickness,
+                                'efficiency': output_power * 100 / (output_power + core_loss + Total_Cu_loss),
+                                'Primary Layers': Number_of_layers_primary,
+                                'Secondary Layers': Number_of_layers_secondary,
+                                'Weight Cu Primary': weight_primary_cu,
+                                'weight Cu Secondary': Length_secondary * required_strip_secondary['Conductor Weight for 1000m/Kg'].min() / 10**5
                             }
 
                         return results_data 
@@ -426,6 +440,8 @@ class StripGUI:
                 'Temperature rise Fe': [],
                 'Core weight': [],
                 'Conductor weight': [],
+                'Total Cu Cost': [],
+                'Total Fe Cost': [],
                 'Cost': [],
                 'Primary turns': [],
                 'Secondary turns': [],
@@ -446,7 +462,15 @@ class StripGUI:
                 'Primary power': [],
                 'Secondary current': [],
                 'Secondary voltage': [],
-                'Secondary power': []
+                'Secondary power': [], 
+                'Frequency': [],
+                'B max': [],
+                'bobbin': [],
+                'efficiency': [],
+                'Primary Layers': [],
+                'Secondary Layers': [],
+                'Weight Cu Primary': [],
+                'weight Cu Secondary': []
             })
         else:
             final_result = final_result.sort_values('Cost')
@@ -627,8 +651,8 @@ class StripGUI:
                                         'Total Built': Total_Built,
                                         'Core Loss': core_loss,
                                         'Copper Loss': Total_Cu_loss,
-                                        # 'Total Cu Cost': Weight_of_copper_kg * Rate_of_Cu,
-                                        # 'Total Fe Cost': weight_of_core_kg * Rate_of_Fe,
+                                        'Total Cu Cost': Weight_of_copper_kg * Rate_of_Cu,
+                                        'Total Fe Cost': weight_of_core_kg * Rate_of_Fe,
                                         'Temperature rise Cu': temperature_rise_copper,
                                         'Temperature rise Fe': temperature_rise_core,
                                         'Core weight': weight_of_core_kg,
@@ -653,7 +677,15 @@ class StripGUI:
                                         'Primary power': input_current * input_voltage,
                                         'Secondary current': secondary_current,
                                         'Secondary voltage': output_voltage,
-                                        'Secondary power': output_power
+                                        'Secondary power': output_power,
+                                        'Frequency': frequency,
+                                        'B max': b_ac,
+                                        'bobbin': bobbin_thickness,
+                                        'efficiency': output_power * 100 / (output_power + core_loss + Total_Cu_loss),
+                                        'Primary Layers': Number_of_layers_primary,
+                                        'Secondary Layers': Number_of_layers_secondary,
+                                        'Weight Cu Primary': Length_primary * required_strip_primary['Conductor Weight for 1000m/Kg'].min() / 10**5,
+                                        'weight Cu Secondary': Length_secondary * required_strip_secondary['Conductor Weight for 1000m/Kg'].min() / 10**5
                                     }
                                     data.append(results_data)
             else:
@@ -733,8 +765,8 @@ class StripGUI:
                                     'Total Built': Total_Built,
                                     'Core Loss': core_loss,
                                     'Copper Loss': Total_Cu_loss,
-                                    # 'Total Cu Cost': Weight_of_copper_kg * Rate_of_Cu,
-                                    # 'Total Fe Cost': weight_of_core_kg * Rate_of_Fe,
+                                    'Total Cu Cost': Weight_of_copper_kg * Rate_of_Cu,
+                                    'Total Fe Cost': weight_of_core_kg * Rate_of_Fe,
                                     'Temperature rise Cu': temperature_rise_copper,
                                     'Temperature rise Fe': temperature_rise_core,
                                     'Core weight': weight_of_core_kg,
@@ -759,7 +791,15 @@ class StripGUI:
                                     'Primary power': input_current * input_voltage,
                                     'Secondary current': secondary_current,
                                     'Secondary voltage': output_voltage,
-                                    'Secondary power': output_power
+                                    'Secondary power': output_power,
+                                    'Frequency': frequency,
+                                    'B max': b_ac,
+                                    'bobbin': bobbin_thickness,
+                                    'efficiency': output_power * 100 / (output_power + core_loss + Total_Cu_loss),
+                                    'Primary Layers': Number_of_layers_primary,
+                                    'Secondary Layers': Number_of_layers_secondary,
+                                    'Weight Cu Primary': Length_primary * required_strip_primary['Conductor Weight for 1000m/Kg'].min() / 10**5,
+                                    'weight Cu Secondary': Length_secondary * required_strip_secondary['Conductor Weight for 1000m/Kg'].min() / 10**5
                                 }
                                 data.append(results_data)
 
@@ -945,6 +985,8 @@ class StripGUI:
                 'Copper Loss': [],
                 'Temperature rise Cu': [],
                 'Temperature rise Fe': [],
+                'Total Cu Cost': [],
+                'Total Fe Cost': [],
                 'Core weight': [],
                 'Conductor weight': [],
                 'Cost': [],
@@ -967,7 +1009,15 @@ class StripGUI:
                 'Primary power': [],
                 'Secondary current': [],
                 'Secondary voltage': [],
-                'Secondary power': []
+                'Secondary power': [],
+                'Frequency': [],
+                'B max': b_ac,
+                'bobbin': [],
+                'efficiency': [],
+                'Primary Layers': [],
+                'Secondary Layers': [],
+                'Weight Cu Primary': [],
+                'weight Cu Secondary': []
             })
 
         top = df.sort_values('Cost').groupby('Lamination').first().sort_values('Cost')
@@ -977,11 +1027,12 @@ class StripGUI:
         for single_lamination in df['Lamination'].unique():
             d = df[df['Lamination'] == single_lamination]
             d_min_cost = d[d['Cost'] == d['Cost'].min()][:1]
+            lamination = d_min_cost['Lamination'].min()
             top_3.append({
                 # 'x %': d_min_cost['x %'].min(),
                 # 'Lamination': d_min_cost['Lamination'].min(),
                 # 'Area Product cm²': d_min_cost['Area product'].min(),
-                'Type': 'Lamination ',
+                'Type': f'Lamination {lamination}',
                 'Primary wire': d_min_cost['Primary wire'].min(),
                 'width primary': d_min_cost['width primary'].min(),
                 'height primary': d_min_cost['height primary'].min(),
@@ -999,8 +1050,8 @@ class StripGUI:
                 'Copper Loss': d_min_cost['Copper Loss'].min(),
                 'Temperature rise Cu': d_min_cost['Temperature rise Cu'].min(),
                 'Temperature rise Fe': d_min_cost['Temperature rise Fe'].min(),
-                # 'Total Cu Cost': d_min_cost['Total Cu Cost'].min(),
-                # 'Total Fe Cost': d_min_cost['Total Fe Cost'].min(),
+                'Total Cu Cost': d_min_cost['Total Cu Cost'].min(),
+                'Total Fe Cost': d_min_cost['Total Fe Cost'].min(),
                 'Core weight': d_min_cost['Core weight'].min(),
                 'Conductor weight': d_min_cost['Conductor weight'].min(),
                 'Cost': d_min_cost['Cost'].min(),
@@ -1023,7 +1074,15 @@ class StripGUI:
                 'Primary power': d_min_cost['Primary power'].min(),
                 'Secondary current': d_min_cost['Secondary current'].min(),
                 'Secondary voltage': d_min_cost['Secondary voltage'].min(),
-                'Secondary power': d_min_cost['Secondary power'].min()
+                'Secondary power': d_min_cost['Secondary power'].min(),
+                'Frequency': d_min_cost['Frequency'].min(),
+                'B max': d_min_cost['B max'].min(),
+                'bobbin': d_min_cost['bobbin'].min(),
+                'efficiency': d_min_cost['efficiency'].min(),
+                'Primary Layers': d_min_cost['Primary Layers'].min(),
+                'Secondary Layers': d_min_cost['Secondary Layers'].min(),
+                'Weight Cu Primary': d_min_cost['Weight Cu Primary'].min(),
+                'weight Cu Secondary': d_min_cost['weight Cu Secondary'].min()
             })
         if len(top_3) == 0:
             top_3 = pd.DataFrame({
@@ -1046,6 +1105,8 @@ class StripGUI:
                 'Copper Loss': [],
                 'Temperature rise Cu': [],
                 'Temperature rise Fe': [],
+                'Total Cu Cost': [],
+                'Total Fe Cost': [],
                 'Core weight': [],
                 'Conductor weight': [],
                 'Cost': [],
@@ -1068,7 +1129,15 @@ class StripGUI:
                 'Primary power': [],
                 'Secondary current': [],
                 'Secondary voltage': [],
-                'Secondary power': []
+                'Secondary power': [],
+                'Frequency': [],
+                'B max': [],
+                'bobbin': [],
+                'efficiency': [],
+                'Primary Layers': [],
+                'Secondary Layers': [],
+                'Weight Cu Primary': [],
+                'weight Cu Secondary': []
             })
 
         result = pd.DataFrame(top_3).sort_values('Cost')
@@ -1192,31 +1261,56 @@ class Strip_Output:
         print(data.columns)
         popup = Tk()
         popup.title(f'Data of {self.strip_number}')
-        # popup.grab_set()
-        primary_wire = Input_Label(popup, 'Primary wire', 0, 4)
-        width_primary = Input_Label(popup, 'Primary width', 1, 4)
-        height_primary = Input_Label(popup, 'Primary height', 2, 4)
+        """
+        ======================================================
+                            TOP Row
+        ======================================================
+        """
+        Row = 3
+        frequency = Input_Label(popup, 'Frequency', Row, 3)
+        GetData(frequency, data['Frequency'].min())
+        phase = Input_Label(popup, 'Phase', Row, 5)
+        GetData(phase, 'Single')
+        bac = Input_Label(popup, 'B Max', Row, 7)
+        GetData(bac, data['B max'].min())
+        core = Input_Label(popup, 'Core', Row + 1, 3)
+        GetData(core, 'Iron Fe')
+        bobbin = Input_Label(popup, 'Bobbin thickness', Row + 1, 5)
+        GetData(bobbin, data['bobbin'].min())
+        Row = Row + 2
+        """
+        =======================================================
+                            V, I, VA
+        ======================================================="""
+        primary_wire = Input_Label(popup, 'Primary wire', Row + 0, 4)
+        width_primary = Input_Label(popup, 'Primary width', Row + 1, 4)
+        height_primary = Input_Label(popup, 'Primary height', Row + 2, 4)
         GetData(primary_wire, data['Primary wire'].min())
         GetData(width_primary, data['width primary'].min())
         GetData(height_primary, data['height primary'].min())
-        secondary_wire = Input_Label(popup, 'Secondary', 0, 6)
-        width_secondary = Input_Label(popup, 'Secondary width', 1, 6)
-        height_secondary = Input_Label(popup, 'Secondary height', 2, 6)
+        secondary_wire = Input_Label(popup, 'Secondary', Row + 0, 6)
+        width_secondary = Input_Label(popup, 'Secondary width', Row + 1, 6)
+        height_secondary = Input_Label(popup, 'Secondary height', Row + 2, 6)
         GetData(secondary_wire, data['Secondary wire'].min())
         GetData(width_secondary, data['width secondary'].min())
         GetData(height_secondary, data['height secondary'].min())
 
         # currents
-        Row = 7
+        Row = Row + 7
         Column = 3
         primary_current = Input_Label(popup, 'Primary current', Row, 3)
         primary_voltage = Input_Label(popup, 'Primary voltage', Row, 5)
         primary_power = Input_Label(popup, 'Primary Power', Row, 7)
         GetData(primary_current, data['Primary current'].min())
+        GetData(primary_voltage, data['Primary voltage'].min())
+        GetData(primary_power, data['Primary power'].min())
 
         secondary_current = Input_Label(popup, 'Secondary current', Row + 1, 3)
         secondary_voltage = Input_Label(popup, 'Secondary voltage', Row + 1, 5)
         secondary_power = Input_Label(popup, 'Secondary Power', Row + 1, 7)
+        GetData(secondary_current, data['Secondary current'].min())
+        GetData(secondary_voltage, data['Secondary voltage'].min())
+        GetData(secondary_power, data['Secondary power'].min())
         # print(data[n: n+1])
         print(data['Cost'])
         
@@ -1246,11 +1340,13 @@ class Strip_Output:
         primary_tpl = Output_Label(popup, 'TPL Primary', Row, Column + 2)
         primary_length = Output_Label(popup, 'Length Primary', Row+2, Column)
         primary_resistance = Output_Label(popup, 'Resistance primary', Row+2, Column + 1)
+        primary_layers = Output_Label(popup, 'No of Layers Primary', Row+2, Column + 2)
         GetData(primary_turns, data['Primary turns'].min())
         GetData(primary_mtl, data['MTL Primary'].min())
         GetData(primary_tpl, data['TPL Primary'].min())
         GetData(primary_length, data['Length primary'].min())
         GetData(primary_resistance, data['Resistance primary'].min())
+        GetData(primary_layers, data['Primary Layers'].min())
 
         Column = Column + 3
         secondary_turns = Output_Label(popup, 'Secondary turns', Row, Column)
@@ -1258,11 +1354,13 @@ class Strip_Output:
         secondary_tpl = Output_Label(popup, 'TPL Secondary', Row, Column + 2)
         secondary_length = Output_Label(popup, 'Length Secondary', Row+2, Column)
         secondary_resistance = Output_Label(popup, 'Resistance Secondary', Row+2, Column + 1)
+        secondary_layers = Output_Label(popup, 'No of Layers Secondary', Row + 2, Column + 2)
         GetData(secondary_turns, data['Secondary turns'].min())
         GetData(secondary_mtl, data['MTL Secondary'].min())
         GetData(secondary_tpl, data['TPL Secondary'].min())
         GetData(secondary_length, data['Length secondary'].min())
         GetData(secondary_resistance, data['Resistance secondary'].min())
+        GetData(secondary_layers, data['Secondary Layers'].min())
         """
         ============================================================
                               Losses and Temperature
@@ -1273,8 +1371,69 @@ class Strip_Output:
 
         primary_built  = Output_Label(popup, 'Built Primary', Row, Column)
         secondary_built = Output_Label(popup, 'Built Secondary', Row, Column+1)
-        total_built = Output_Label(popup, 'Total Built', Row, Column+1)
+        total_built = Output_Label(popup, 'Total Built', Row, Column+2)
+        GetData(primary_built, data['Primary Built'].min())
+        GetData(secondary_built, data['Secondary Built'].min())
+        GetData(total_built, data['Total Built'].min())
 
+        """
+        ============================================================
+                              Bottom Row
+        ============================================================
+        """
+        Row = Row + 7
+        core_loss = Output_Label(popup, 'Core Loss', Row, Column)
+        copper_loss = Output_Label(popup, 'Copper Loss', Row, Column+1)
+        total_loss = Output_Label(popup, 'Total Loss', Row, Column + 2)
+        GetData(core_loss, data['Core Loss'].min())
+        GetData(copper_loss, data['Copper Loss'].min())
+        total_loss_calculated = data['Core Loss'].min() + data['Copper Loss'].min()
+        GetData(total_loss, total_loss_calculated)
+
+        cu_temp = Output_Label(popup, 'Copper Temp Rise', Row, Column + 3)
+        fe_temp = Output_Label(popup, 'Core Temp Rise', Row , Column + 4)
+        GetData(cu_temp, data['Temperature rise Cu'].min())
+        GetData(fe_temp, data['Temperature rise Fe'].min())
+
+        wt_cu_primary = Output_Label(popup, 'Primary Cu Weight', Row + 2, Column)
+        wt_cu_secondary = Output_Label(popup, 'Secondary Cu Weight', Row + 2 , Column + 1)
+        wt_cu = Output_Label(popup, 'Cu Weight Total', Row + 2, Column + 2)
+        wt_core = Output_Label(popup, 'Core Weight', Row + 2, Column + 3)
+        GetData(wt_cu_primary, data['Weight Cu Primary'].min())
+        GetData(wt_cu_secondary, data['weight Cu Secondary'].min())
+        GetData(wt_cu, data['Weight of Cu kg'].min())
+        GetData(wt_core, data['Weight of Fe'].min())
+
+        cu_cost = Output_Label(popup, 'Copper cost', Row + 4, Column+4)
+        core_cost = Output_Label(popup, 'Core cost', Row + 4, Column+5)
+        GetData(cu_cost, data['Total Cu Cost'].min())
+        GetData(core_cost, data['Total Fe Cost'].min())
+        cost = Output_Label(popup, 'Cost', Row + 6, Column + 5)
+        GetData(cost, data['Cost'].min())
+
+        """
+        
+        wt core
+        efficiency
+        n of layers
+        cu wt priamry
+        cu wt secondary
+
+
+        core_loss
+        copper loss
+        total loss
+        efficiency
+        
+        
+        cu wt primary
+        cu wt secondary
+
+        resistance
+        cu cost
+        core cost
+        cost
+        """
         
         pass 
 

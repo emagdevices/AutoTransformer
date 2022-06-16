@@ -207,7 +207,7 @@ class AutoTransformer:
         :param bobbin_thickness:
         :return: bobbin_thickness + number_of_layers_primary * diameter_of_primary_wire
         """
-        return bobbin_thickness + number_of_layers_primary * diameter_of_primary_wire
+        return  number_of_layers_primary * diameter_of_primary_wire
 
     @staticmethod
     def built_primary_strip(number_of_layers_primary, height_primary, insulation_thickness):
