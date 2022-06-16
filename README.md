@@ -44,48 +44,18 @@ $$A_p=\dfrac{P_t (10^4)}{K_f K_u B_ac f J} $$
 &#8866; README.md
 &#8866; DATA
     &#8866; EI-Laminations.csv
-    &#8985; EMD - Sheet1.csv
-&#8866; FINAL
-    &#8866; DATA
-       &#8866; EI-Laminations.csv
-       &#8985; EMD - Sheet1.csv    
-    &#8866; data.py
-    &#8985; main.py
+    &#8866; standard_stack.csv
+    &#8985; Wires_data.csv
+&#8866; final    
+    &#8866; singletransformer.py (functionsa are written in this file)
+    &#8985; strip_gui.py  (** main program file)
 &#8866; TEST
-&#8866; .gitignore
-&#8866; main.ipynb
-&#8866; main.py
-&#8866; requirements.txt
-&#8985; sop.txt
+    &#8985; all the tested files
+&#8866; SOP.md
+&#8985; steps.txt
 </pre>
 
 
 ## Some extra information
 
-For strip calculation 
 
-    Area = s * t * ww * wl
-
-    s, t, ww, wl muliples of 5
-
-    s * t * ww * wl  <= Area_product
-
-    50 < s < 400
-    50 < t < 250
-    20 < ww < 400
-    50 < wl < 700
-
-    s = [50, 55, 60 ... 445]
-    t = [50, 55, .. ]
-
-
-For previous version single phase transformer we need to go for files in 
-
-<pre>
-
-&#8866; TEST
-    &#8866; BASIC
-        &#8866; Auto_transformer.ipynb
-        &#8866; main.ipynb
-        &#8866; main.py
-</pre>
