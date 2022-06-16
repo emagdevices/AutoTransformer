@@ -100,7 +100,7 @@ class AutoTransformer:
         return a_wp * 100
 
     def find_swg(self, Bare_area):
-        swg_data = pd.read_csv("https://raw.githubusercontent.com/yaswanthbandaru/transformer-design/main/DATA/EMD%20-%20Sheet1.csv")
+        swg_data = pd.read_csv("https://raw.githubusercontent.com/emagdevices/AutoTransformer/master/DATA/EMD%20-%20Sheet1.csv")
         higher_data = swg_data[Bare_area < swg_data['Normal Conductor Area mm²']]
         ## changing the higher data.iloc to swg_data.iloc for nearest one in the below line 
         required_swg = swg_data.iloc[(swg_data['Normal Conductor Area mm²'] - Bare_area).abs().argsort()[:1]]
