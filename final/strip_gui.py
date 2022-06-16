@@ -1274,10 +1274,10 @@ class Strip_Output:
         bac = Input_Label(popup, 'B Max', Row, 7)
         GetData(bac, data['B max'].min())
         core = Input_Label(popup, 'Core', Row + 1, 3)
-        GetData(core, 'Iron Fe')
+        GetData(core, data['Type'].max())
         bobbin = Input_Label(popup, 'Bobbin thickness', Row + 1, 5)
         GetData(bobbin, data['bobbin'].min())
-        Row = Row + 2
+        Row = Row + 4
         """
         =======================================================
                             V, I, VA
@@ -1337,10 +1337,11 @@ class Strip_Output:
         Row = Row + 2
         primary_turns = Output_Label(popup, 'Primary turns', Row, Column)
         primary_mtl = Output_Label(popup, 'MTL Primary',Row, Column + 1)
-        primary_tpl = Output_Label(popup, 'TPL Primary', Row, Column + 2)
-        primary_length = Output_Label(popup, 'Length Primary', Row+2, Column)
-        primary_resistance = Output_Label(popup, 'Resistance primary', Row+2, Column + 1)
-        primary_layers = Output_Label(popup, 'No of Layers Primary', Row+2, Column + 2)
+        primary_tpl = Output_Label(popup, 'TPL Primary', Row + 2, Column)
+        primary_layers = Output_Label(popup, 'No of Layers Primary', Row + 2, Column + 1)
+        primary_length = Output_Label(popup, 'Length Primary', Row + 4, Column)
+        primary_resistance = Output_Label(popup, 'Resistance primary', Row + 4, Column + 1)
+        primary_built  = Output_Label(popup, 'Built Primary', Row + 4, Column+2)
         GetData(primary_turns, data['Primary turns'].min())
         GetData(primary_mtl, data['MTL Primary'].min())
         GetData(primary_tpl, data['TPL Primary'].min())
@@ -1349,12 +1350,13 @@ class Strip_Output:
         GetData(primary_layers, data['Primary Layers'].min())
 
         Column = Column + 3
-        secondary_turns = Output_Label(popup, 'Secondary turns', Row, Column)
-        secondary_mtl = Output_Label(popup, 'MTL Secondary',Row, Column + 1)
-        secondary_tpl = Output_Label(popup, 'TPL Secondary', Row, Column + 2)
-        secondary_length = Output_Label(popup, 'Length Secondary', Row+2, Column)
-        secondary_resistance = Output_Label(popup, 'Resistance Secondary', Row+2, Column + 1)
+        secondary_turns = Output_Label(popup, 'Secondary turns', Row, Column+1)
+        secondary_mtl = Output_Label(popup, 'MTL Secondary',Row, Column + 2)
+        secondary_tpl = Output_Label(popup, 'TPL Secondary', Row+2, Column + 1)
         secondary_layers = Output_Label(popup, 'No of Layers Secondary', Row + 2, Column + 2)
+        secondary_length = Output_Label(popup, 'Length Secondary', Row+4, Column)
+        secondary_resistance = Output_Label(popup, 'Resistance Secondary', Row+4, Column + 1)
+        secondary_built = Output_Label(popup, 'Built Secondary', Row + 4, Column+2)
         GetData(secondary_turns, data['Secondary turns'].min())
         GetData(secondary_mtl, data['MTL Secondary'].min())
         GetData(secondary_tpl, data['TPL Secondary'].min())
@@ -1367,11 +1369,9 @@ class Strip_Output:
         ============================================================
         """
         Column = Column - 3
-        Row = Row + 5
+        Row = Row + 7
 
-        primary_built  = Output_Label(popup, 'Built Primary', Row, Column)
-        secondary_built = Output_Label(popup, 'Built Secondary', Row, Column+1)
-        total_built = Output_Label(popup, 'Total Built', Row, Column+2)
+        total_built = Output_Label(popup, 'Total Built', Row, Column+4)
         GetData(primary_built, data['Primary Built'].min())
         GetData(secondary_built, data['Secondary Built'].min())
         GetData(total_built, data['Total Built'].min())
@@ -1383,29 +1383,30 @@ class Strip_Output:
         """
         Row = Row + 7
         core_loss = Output_Label(popup, 'Core Loss', Row, Column)
-        copper_loss = Output_Label(popup, 'Copper Loss', Row, Column+1)
-        total_loss = Output_Label(popup, 'Total Loss', Row, Column + 2)
+        fe_temp = Output_Label(popup, 'Core Temp Rise', Row , Column + 1)
+        copper_loss = Output_Label(popup, 'Copper Loss', Row, Column+4)
+        cu_temp = Output_Label(popup, 'Copper Temp Rise', Row , Column + 5)
+        total_loss = Output_Label(popup, 'Total Loss', Row + 2, Column + 1)
         GetData(core_loss, data['Core Loss'].min())
         GetData(copper_loss, data['Copper Loss'].min())
         total_loss_calculated = data['Core Loss'].min() + data['Copper Loss'].min()
         GetData(total_loss, total_loss_calculated)
 
-        cu_temp = Output_Label(popup, 'Copper Temp Rise', Row, Column + 3)
-        fe_temp = Output_Label(popup, 'Core Temp Rise', Row , Column + 4)
         GetData(cu_temp, data['Temperature rise Cu'].min())
         GetData(fe_temp, data['Temperature rise Fe'].min())
 
-        wt_cu_primary = Output_Label(popup, 'Primary Cu Weight', Row + 2, Column)
-        wt_cu_secondary = Output_Label(popup, 'Secondary Cu Weight', Row + 2 , Column + 1)
-        wt_cu = Output_Label(popup, 'Cu Weight Total', Row + 2, Column + 2)
-        wt_core = Output_Label(popup, 'Core Weight', Row + 2, Column + 3)
+        Row = Row + 2
+        wt_core = Output_Label(popup, 'Core Weight', Row , Column)
+        wt_cu_primary = Output_Label(popup, 'Primary Cu Weight', Row, Column + 4)
+        wt_cu_secondary = Output_Label(popup, 'Secondary Cu Weight', Row , Column + 5)
+        wt_cu = Output_Label(popup, 'Cu Weight Total', Row + 6, Column)
+        cu_cost = Output_Label(popup, 'Copper cost', Row + 6, Column+1)
         GetData(wt_cu_primary, data['Weight Cu Primary'].min())
         GetData(wt_cu_secondary, data['weight Cu Secondary'].min())
         GetData(wt_cu, data['Weight of Cu kg'].min())
         GetData(wt_core, data['Weight of Fe'].min())
 
-        cu_cost = Output_Label(popup, 'Copper cost', Row + 4, Column+4)
-        core_cost = Output_Label(popup, 'Core cost', Row + 4, Column+5)
+        core_cost = Output_Label(popup, 'Core cost', Row + 6, Column+4)
         GetData(cu_cost, data['Total Cu Cost'].min())
         GetData(core_cost, data['Total Fe Cost'].min())
         cost = Output_Label(popup, 'Cost', Row + 6, Column + 5)

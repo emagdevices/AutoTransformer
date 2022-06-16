@@ -14,9 +14,9 @@ class AutoTransformer:
     k_f = 4.44
     k_u = 0.4
     # lamination data and swg data
-    lamination_data = pd.read_csv("https://raw.githubusercontent.com/emagdevices/auto-transformer/main/DATA/EI-Laminations.csv")
+    lamination_data = pd.read_csv("https://raw.githubusercontent.com/emagdevices/AutoTransformer/master/DATA/EI-Laminations.csv")
     # swg_data = pd.read_csv("https://raw.githubusercontent.com/yaswanthbandaru/transformer-design/main/DATA/EMD%20-%20Sheet1.csv")
-    swg_data = pd.read_csv("https://raw.githubusercontent.com/emagdevices/auto-transformer/main/DATA/Wires_data.csv")
+    swg_data = pd.read_csv("https://raw.githubusercontent.com/emagdevices/AutoTransformer/master/DATA/Wires_data.csv")
     # strip_data = pd.read_csv("https://raw.githubusercontent.com/yaswanthbandaru/transformer-design/main/DATA/Strip_Wires_Combinations.csv")
     strip_data = swg_data
 
